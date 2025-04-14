@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ lesson.title }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+  <div class="container">
+    <div class="nav-row">
+      <a class="nav-item" href="/home">Home</a>
+      <a class="nav-item" href="/my_courses">My Courses</a>
+      <a class="nav-item" href="/logout">Logout</a>
+    </div>
+
+    <h1 class="hero-header">{{ lesson.title }}</h1>
+
+    <div class="lesson-details">
+      <p><strong>Duration:</strong> {{ lesson.duration }} minutes</p>
+      <p><strong>Video:</strong> <a href="{{ lesson.video_url }}" target="_blank">Watch here</a></p>
+      <p><strong>Description:</strong> {{ lesson.description }}</p>
+    </div>
+
+  </div>
+
+</body>
+</html>

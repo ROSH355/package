@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>My Courses</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+  <div class="container">
+    <div class="nav-row">
+      <a class="nav-item" href="/home">Home</a>
+      <a class="nav-item" href="/courses">All Courses</a>
+      <a class="nav-item" href="/logout">Logout</a>
+    </div>
+
+    <h1 class="hero-header">My Enrolled Courses</h1>
+
+    <div class="course-grid">
+      {% for course in courses %}
+        <div class="course-card">
+          <div class="course-title">{{ course.title }}</div>
+          <div class="course-desc">{{ course.description }}</div>
+
+          <div class="lesson-list">
+            <h3>Lessons:</h3>
+            <ul>
+              {% for lesson in course.lessons %}
+                <li><a href="{{ url_for('lesson_page', lesson_id=lesson.lesson_id) }}">{{ lesson.title }}</a></li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+</body>
+</html>

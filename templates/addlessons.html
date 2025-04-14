@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Lesson</title>
+</head>
+<body>
+    <h1>Add a New Lesson</h1>
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <ul>
+                {% for message in messages %}
+                    <li>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+        <label>Lesson Title:</label><br>
+        <input type="text" name="title"><br><br>
+
+        <label>Video URL:</label><br>
+        <input type="text" name="video_url"><br><br>
+
+        <label>Duration (minutes):</label><br>
+        <input type="number" name="duration"><br><br>
+
+        <label>Order Number:</label><br>
+        <input type="number" name="order_number"><br><br>
+
+        <label>Select Course:</label><br>
+        <select name="course_id">
+            {% for course in courses %}
+                <option value="{{ course.course_id }}" {% if selected_course_id|int == course.course_id %}selected{% endif %}>
+                    {{ course.title }}
+                </option>
+            {% endfor %}
+        </select>
+        
+
+        <input type="submit" value="Add Lesson">
+    </form>
+</body>
+</html>

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Course</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h2>Create a New Course</h2>
+    <form method="POST">
+        <label>Course Title:</label>
+        <input type="text" name="title" required><br><br>
+
+        <label>Description:</label>
+        <textarea name="description" required></textarea><br><br>
+
+        <label>Instructor Email:</label>
+        <input type="email" name="email" required><br><br>
+
+        <button type="submit">Create Course</button>
+    </form>
+</body>
+</html>
