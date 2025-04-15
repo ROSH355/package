@@ -37,13 +37,23 @@
           </div>
 
           {% if course.quizzes %}
+            <div class="quiz-list">
+              <p><strong>Quizzes:</strong></p>
               {% for quiz in course.quizzes %}
-                <div style="margin-top: 10px;">
-                  <a href="{{ url_for('attend_quiz', quiz_id=quiz.quiz_id) }}" class="cta-button">Attend Quiz</a>
+                <div class="quiz-block">
+                  <p><strong>{{ quiz.title }}</strong></p>
+                  
+                  {% if session['role'] == 'instructor' %}
+                    <!-- Only show "View Submissions" for instructors -->
+                    <a href="{{ url_for('view_quiz_results', quiz_id=quiz.quiz_id) }}">View Submissions</a>
+                  {% elif session['role'] == 'student' %}
+                    <!-- Only show "Take Quiz" for students -->
+                    <a href="{{ url_for('attend_quiz', quiz_id=quiz.quiz_id) }}">Take Quiz</a>
+                  {% endif %}
                 </div>
               {% endfor %}
-            {% endif %}
-
+            </div>
+          {% endif %}
 
         </div>
       {% endfor %}
