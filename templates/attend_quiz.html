@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head><title>Attend Quiz</title></head>
+<body>
+  <h2>{{ quiz.title }}</h2>
+  <form method="POST">
+    {% for q in questions %}
+      <p><strong>{{ loop.index }}. {{ q.question_text }}</strong></p>
+      <input type="radio" name="question_{{ q.question_id }}" value="A"> {{ q.option_a }}<br>
+      <input type="radio" name="question_{{ q.question_id }}" value="B"> {{ q.option_b }}<br>
+      <input type="radio" name="question_{{ q.question_id }}" value="C"> {{ q.option_c }}<br>
+      <input type="radio" name="question_{{ q.question_id }}" value="D"> {{ q.option_d }}<br>
+      <br>
+    {% endfor %}
+    <input type="submit" value="Submit Quiz">
+  </form>
+</body>
+</html>

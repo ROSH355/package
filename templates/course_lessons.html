@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Course Lessons</title>
+    <title>Course Lessons and Quizzes</title>
 </head>
 <body>
     <h1>Lessons for {{ course.title }}</h1>
@@ -10,13 +10,30 @@
     {% if lessons %}
         <ul>
         {% for lesson in lessons %}
-            <li>{{ lesson.title }} - Duration: {{ lesson.duration }} minutes
-                <br><a href="{{ lesson.video_url }}" target="_blank">Watch Video</a>
+            <li>
+                {{ lesson.title }} - Duration: {{ lesson.duration }} minutes<br>
+                <a href="{{ lesson.video_url }}" target="_blank">Watch Video</a>
             </li>
         {% endfor %}
         </ul>
     {% else %}
         <p>No lessons available for this course yet.</p>
+    {% endif %}
+
+    <hr>
+
+    {% if quizzes %}
+        <h3>Available Quizzes</h3>
+        <ul>
+        {% for quiz in quizzes %}
+            <li>
+                <strong>{{ quiz.title }}</strong> - 
+                <a href="{{ url_for('attend_quiz', quiz_id=quiz.quiz_id) }}">Attempt Quiz</a>
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>No quizzes available for this course yet.</p>
     {% endif %}
 </body>
 </html>

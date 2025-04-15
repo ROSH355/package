@@ -34,7 +34,7 @@ class Course(db.Model):
     instructor_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
     created_at = db.Column(db.TIMESTAMP, server_default=func.now())
     instructor = db.relationship('User', backref='courses')
-    quizzes = db.relationship('Quiz', backref='course', lazy=True)
+
 class Enrollment(db.Model):
     __tablename__ = 'enrollments'
     enrollment_id = db.Column(db.Integer, primary_key=True)
@@ -64,7 +64,7 @@ class Quiz(db.Model):
 
 class QuizQuestion(db.Model):
     __tablename__ = 'quiz_questions'
-    question_id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
     quiz_id = db.Column(db.Integer, db.ForeignKey('quizzes.quiz_id'), nullable=False)
     question_text = db.Column(db.String(500), nullable=False)
     option_a = db.Column(db.String(200), nullable=False)
@@ -214,9 +214,8 @@ def my_courses():
 
         # Attach related quiz if any to each course
         for course in courses:
+            course.quiz = Quiz.query.filter_by(course_id=course.course_id).first()
             course.lessons = Lesson.query.filter_by(course_id=course.course_id).all()
-            course.quizzes = Quiz.query.filter_by(course_id=course.course_id).all()
-
 
         return render_template('my_courses.html', courses=courses)
 

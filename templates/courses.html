@@ -21,16 +21,24 @@
       {% for course in courses %}
         <div class="course-card">
           <div class="course-title">
-            <!-- Link to course lessons page -->
-            <a href="{{ url_for('course_lessons', course_id=course.course_id) }}">{{ course.title }}</a>
+            <a href="{{ url_for('course_page', course_id=course.course_id) }}">
+              {{ course.title }}
+            </a>
           </div>
+          
           <div class="course-desc">{{ course.description }}</div>
           <div class="instructor-name">Instructor: {{ course.instructor.full_name }}</div>
+
           {% if session['role'] == 'student' %}
-            <a href="/enroll/{{ course.course_id }}" class="cta-button">Enroll</a>
+            {% set quiz = course.quizzes[0] if course.quizzes else None %}
+            {% if quiz %}
+              <a href="{{ url_for('attend_quiz', quiz_id=quiz.quiz_id) }}" class="cta-button">Attend Quiz</a>
+            {% endif %}
           {% elif session['role'] == 'instructor' and course.instructor_id == session['user_id'] %}
-            <!-- Only show Add Lesson button if instructor is the creator of the course -->
-            <a href="{{ url_for('addlessons', course_id=course.course_id) }}" class="cta-button">Add Lesson</a>
+            <div class="course-actions">
+              <a href="{{ url_for('addlessons', course_id=course.course_id) }}" class="btn btn-success">Add Lesson</a>
+              <a href="{{ url_for('create_quiz', course_id=course.course_id) }}" class="btn btn-success">Create Quiz</a>
+            </div>
           {% endif %}
         </div>
       {% endfor %}
