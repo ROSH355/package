@@ -34,7 +34,7 @@ class Course(db.Model):
     instructor_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
     created_at = db.Column(db.TIMESTAMP, server_default=func.now())
     instructor = db.relationship('User', backref='courses')
-    quizzes = db.relationship('Quiz', backref='course', lazy=True)
+
 class Enrollment(db.Model):
     __tablename__ = 'enrollments'
     enrollment_id = db.Column(db.Integer, primary_key=True)
@@ -64,7 +64,7 @@ class Quiz(db.Model):
 
 class QuizQuestion(db.Model):
     __tablename__ = 'quiz_questions'
-    question_id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
     quiz_id = db.Column(db.Integer, db.ForeignKey('quizzes.quiz_id'), nullable=False)
     question_text = db.Column(db.String(500), nullable=False)
     option_a = db.Column(db.String(200), nullable=False)
@@ -200,52 +200,24 @@ def enroll(course_id):
 #     user = User.query.get(session['user_id'])
 #     enrolled_courses = [en.course for en in user.enrollments]
 #     return render_template('my_courses.html', courses=enrolled_courses)
-# @app.route('/my_courses')
-# def my_courses():
-#     if 'user_id' not in session:
-#         return redirect(url_for('login'))
-
-#     user_id = session['user_id']
-#     user = User.query.get(user_id)
-
-#     if user.role == 'student':
-#         enrollments = Enrollment.query.filter_by(user_id=user_id).all()
-#         courses = [Course.query.get(enrollment.course_id) for enrollment in enrollments]
-
-#         # Attach related quiz if any to each course
-#         for course in courses:
-#             course.lessons = Lesson.query.filter_by(course_id=course.course_id).all()
-#             course.quizzes = Quiz.query.filter_by(course_id=course.course_id).all()
-
-
-#         return render_template('my_courses.html', courses=courses)
-
 @app.route('/my_courses')
 def my_courses():
     if 'user_id' not in session:
-        return redirect(url_for('login'))  # Ensure the user is logged in
+        return redirect(url_for('login'))
 
     user_id = session['user_id']
     user = User.query.get(user_id)
-
-    if not user:
-        flash("User not found.", "error")
-        return redirect(url_for('login'))
 
     if user.role == 'student':
         enrollments = Enrollment.query.filter_by(user_id=user_id).all()
         courses = [Course.query.get(enrollment.course_id) for enrollment in enrollments]
 
-        # Attach related quizzes and lessons for each course
+        # Attach related quiz if any to each course
         for course in courses:
+            course.quiz = Quiz.query.filter_by(course_id=course.course_id).first()
             course.lessons = Lesson.query.filter_by(course_id=course.course_id).all()
-            course.quizzes = Quiz.query.filter_by(course_id=course.course_id).all()
 
         return render_template('my_courses.html', courses=courses)
-    else:
-        flash("You are not authorized to view this page.", "error")
-        return redirect(url_for('courses'))  # Redirect to 'show_courses' instead of 'courses'
-
 
 @app.route('/addlessons/<int:course_id>', methods=['GET', 'POST'])
 def addlessons(course_id):
@@ -347,9 +319,10 @@ def attend_quiz(quiz_id):
             if selected and selected.upper() == question.correct_option.upper():
                 score += 1
         
+        # Record the score
         response = QuizResponse(
             quiz_id=quiz_id,
-            user_id=session['user_id'],
+            user_id=session['user_id'],  # assuming session holds user_id
             score=score
         )
         db.session.add(response)
@@ -358,18 +331,6 @@ def attend_quiz(quiz_id):
         return render_template('quiz_result.html', score=score, total=len(questions))
 
     return render_template('attend_quiz.html', quiz=quiz, questions=questions)
-
-@app.route('/view_quiz_results/<int:quiz_id>')
-def view_quiz_results(quiz_id):
-    if 'role' not in session or session['role'] != 'instructor':
-        flash("Access denied.")
-        return redirect(url_for('login'))
-
-    quiz = Quiz.query.get_or_404(quiz_id)
-    results = QuizResponse.query.filter_by(quiz_id=quiz_id).all()
-
-    return render_template('quiz_results_instructor.html', quiz=quiz, results=results)
-
 
 if __name__ == '__main__':
     app.run(debug=True)
