@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Completion</title>
+</head>
+<body>
+
+    <h1>Congratulations, {{ student.name }}!</h1>
+    <p>You have successfully completed the course!</p>
+
+    <!-- Button to download certificate -->
+    {% if certificate %}
+    <a href="{{ url_for('download_certificate', certificate_url=certificate.certificate_url) }}" class="btn btn-primary">Download Certificate</a>
+{% else %}
+    <p>Certificate not yet issued.</p>
+{% endif %}
+
+
+
+</body>
+</html>

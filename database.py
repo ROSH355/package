@@ -1,9 +1,12 @@
 from datetime import datetime
-from flask import Flask, render_template, request, redirect,flash,url_for
+from flask import Flask, render_template, request, redirect,flash, send_from_directory,url_for
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
 import bcrypt
 import pymysql
+import os
+from reportlab.pdfgen import canvas
+from sqlalchemy import text
 
 pymysql.install_as_MySQLdb()
 
@@ -82,6 +85,18 @@ class QuizResponse(db.Model):
     submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
     quiz = db.relationship('Quiz', backref=db.backref('responses', lazy=True))
     user = db.relationship('User', backref=db.backref('quiz_responses', lazy=True))
+
+class Certificate(db.Model):
+    __tablename__ = 'certificates'
+    certificate_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
+    course_id = db.Column(db.Integer, db.ForeignKey('courses.course_id'), nullable=False)
+    issued_at = db.Column(db.TIMESTAMP, server_default=func.now())
+    certificate_url = db.Column(db.String(255), nullable=False)
+
+    user = db.relationship('User', backref='certificates')
+    course = db.relationship('Course', backref='certificates')
+
 
 from flask import session
 
@@ -167,10 +182,18 @@ def create_course():
     
     return render_template('create_course.html')
 
+# 
 @app.route('/courses')
 def show_courses():
     courses = Course.query.all()
-    return render_template('courses.html', courses=courses)
+    enrolled_course_ids = []
+
+    if 'user_id' in session and session.get('role') == 'student':
+        user_id = session['user_id']
+        enrolled_course_ids = [e.course_id for e in Enrollment.query.filter_by(user_id=user_id).all()]
+
+    return render_template('courses.html', courses=courses, enrolled_course_ids=enrolled_course_ids)
+
 
 from flask import session
 
@@ -191,34 +214,6 @@ def enroll(course_id):
     db.session.commit()
     return redirect('/my_courses')
 
-
-# @app.route('/my_courses')
-# def my_courses():
-#     if 'user_id' not in session:
-#         return redirect('/login')
-        
-#     user = User.query.get(session['user_id'])
-#     enrolled_courses = [en.course for en in user.enrollments]
-#     return render_template('my_courses.html', courses=enrolled_courses)
-# @app.route('/my_courses')
-# def my_courses():
-#     if 'user_id' not in session:
-#         return redirect(url_for('login'))
-
-#     user_id = session['user_id']
-#     user = User.query.get(user_id)
-
-#     if user.role == 'student':
-#         enrollments = Enrollment.query.filter_by(user_id=user_id).all()
-#         courses = [Course.query.get(enrollment.course_id) for enrollment in enrollments]
-
-#         # Attach related quiz if any to each course
-#         for course in courses:
-#             course.lessons = Lesson.query.filter_by(course_id=course.course_id).all()
-#             course.quizzes = Quiz.query.filter_by(course_id=course.course_id).all()
-
-
-#         return render_template('my_courses.html', courses=courses)
 
 @app.route('/my_courses')
 def my_courses():
@@ -289,7 +284,7 @@ def course_page(course_id):
 
 @app.route('/lesson/<int:lesson_id>')
 def lesson_page(lesson_id):
-    lesson = Lesson.query.get(lesson_id)
+    lesson = Lesson.query.get(lesson_id) 
     if not lesson:
         return "Lesson not found", 404
     
@@ -370,6 +365,49 @@ def view_quiz_results(quiz_id):
 
     return render_template('quiz_results_instructor.html', quiz=quiz, results=results)
 
+def get_student_by_id(student_id):
+    return User.query.get(student_id)
+
+from sqlalchemy import text
+
+def get_certificate_for_student(student_id, course_id):
+    result = db.session.execute(
+        text("CALL get_certificate_for_student(:student_id, :course_id)"),
+        {"student_id": student_id, "course_id": course_id}
+    ).fetchone()
+
+    return result
+
+def ensure_certificate_pdf(student_id, course_id):
+    filename = f"{student_id}_{course_id}.pdf"
+    cert_dir = os.path.join(app.root_path, 'static', 'certificates')
+    os.makedirs(cert_dir, exist_ok=True)
+    path = os.path.join(cert_dir, filename)
+
+    if not os.path.exists(path):
+        # Generate a simple PDF
+        c = canvas.Canvas(path)
+        c.setFont("Helvetica-Bold", 24)
+        c.drawString(100, 750, "Certificate of Completion")
+        c.setFont("Helvetica", 14)
+        c.drawString(100, 700, f"Congratulations, Student {student_id}!")
+        c.drawString(100, 675, f"You've completed Course {course_id}.")
+        c.save()
+
+@app.route('/course_completion/<student_id>/<course_id>')
+def course_completion(student_id, course_id):
+    student = get_student_by_id(student_id)
+    certificate = get_certificate_for_student(student_id, course_id)
+
+    if certificate:
+        ensure_certificate_pdf(student_id, course_id)
+
+    return render_template('course_completion.html', student=student, certificate=certificate)
+
+@app.route('/download_certificate/<certificate_url>')
+def download_certificate(certificate_url):
+    certificate_directory = os.path.join(app.root_path, 'static', 'certificates')
+    return send_from_directory(certificate_directory, certificate_url, as_attachment=True)
 
 if __name__ == '__main__':
     app.run(debug=True)
