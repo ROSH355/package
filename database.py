@@ -5,6 +5,9 @@ from sqlalchemy.sql import func
 import bcrypt
 import pymysql
 import os
+from reportlab.pdfgen import canvas
+from sqlalchemy import text
+
 pymysql.install_as_MySQLdb()
 
 
@@ -365,24 +368,41 @@ def view_quiz_results(quiz_id):
 def get_student_by_id(student_id):
     return User.query.get(student_id)
 
-@app.route('/course_completion/<student_id>/<course_id>')
-def course_completion(student_id, course_id):
-    # Retrieve student information
-    student = get_student_by_id(student_id)  # Replace with actual data fetching
-
-    # Check if certificate exists in the certificates table
-    certificate = get_certificate_for_student(student_id, course_id)
-
-    # Render the course completion page and pass certificate info
-    return render_template('course_completion.html', student=student, certificate=certificate)
+from sqlalchemy import text
 
 def get_certificate_for_student(student_id, course_id):
-    # Query to check if certificate exists for the student and course
-    certificate = db.session.execute(
-        "SELECT * FROM certificates WHERE user_id = :student_id AND course_id = :course_id",
+    result = db.session.execute(
+        text("CALL get_certificate_for_student(:student_id, :course_id)"),
         {"student_id": student_id, "course_id": course_id}
     ).fetchone()
-    return certificate
+
+    return result
+
+def ensure_certificate_pdf(student_id, course_id):
+    filename = f"{student_id}_{course_id}.pdf"
+    cert_dir = os.path.join(app.root_path, 'static', 'certificates')
+    os.makedirs(cert_dir, exist_ok=True)
+    path = os.path.join(cert_dir, filename)
+
+    if not os.path.exists(path):
+        # Generate a simple PDF
+        c = canvas.Canvas(path)
+        c.setFont("Helvetica-Bold", 24)
+        c.drawString(100, 750, "Certificate of Completion")
+        c.setFont("Helvetica", 14)
+        c.drawString(100, 700, f"Congratulations, Student {student_id}!")
+        c.drawString(100, 675, f"You've completed Course {course_id}.")
+        c.save()
+
+@app.route('/course_completion/<student_id>/<course_id>')
+def course_completion(student_id, course_id):
+    student = get_student_by_id(student_id)
+    certificate = get_certificate_for_student(student_id, course_id)
+
+    if certificate:
+        ensure_certificate_pdf(student_id, course_id)
+
+    return render_template('course_completion.html', student=student, certificate=certificate)
 
 @app.route('/download_certificate/<certificate_url>')
 def download_certificate(certificate_url):
