@@ -28,18 +28,24 @@
           
           <div class="course-desc">{{ course.description }}</div>
           <div class="instructor-name">Instructor: {{ course.instructor.full_name }}</div>
-
           {% if session['role'] == 'student' %}
-            {% set quiz = course.quizzes[0] if course.quizzes else None %}
-            {% if quiz %}
-              <a href="{{ url_for('attend_quiz', quiz_id=quiz.quiz_id) }}" class="cta-button">Attend Quiz</a>
-            {% endif %}
-          {% elif session['role'] == 'instructor' and course.instructor_id == session['user_id'] %}
-            <div class="course-actions">
-              <a href="{{ url_for('addlessons', course_id=course.course_id) }}" class="btn btn-success">Add Lesson</a>
-              <a href="{{ url_for('create_quiz', course_id=course.course_id) }}" class="btn btn-success">Create Quiz</a>
-            </div>
-          {% endif %}
+  {% if course.course_id not in enrolled_course_ids %}
+    <a href="{{ url_for('enroll', course_id=course.course_id) }}" class="cta-button">Enroll</a>
+  {% endif %}
+{% endif %}
+
+{% if session['role'] == 'instructor' %}
+  {% if course.instructor_id == session['user_id'] %}
+    <div class="course-actions">
+      <a href="{{ url_for('addlessons', course_id=course.course_id) }}" class="btn btn-success">Add Lesson</a>
+      <a href="{{ url_for('create_quiz', course_id=course.course_id) }}" class="btn btn-success">Create Quiz</a>
+    </div>
+  {% endif %}
+{% endif %}
+
+          
+
+          
         </div>
       {% endfor %}
     </div>
