@@ -1,5 +1,5 @@
 from datetime import datetime
-from flask import Flask, render_template, request, redirect,flash, send_from_directory,url_for
+from flask import Flask, jsonify, render_template, request, redirect,flash, send_from_directory,url_for
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
 import bcrypt
@@ -353,6 +353,46 @@ def attend_quiz(quiz_id):
         return render_template('quiz_result.html', score=score, total=len(questions))
 
     return render_template('attend_quiz.html', quiz=quiz, questions=questions)
+# @app.route('/attend_quiz/<int:quiz_id>', methods=['GET', 'POST'])
+# def attend_quiz(quiz_id):
+#     if 'user_id' not in session:
+#         return redirect('/login')
+
+#     quiz = db.session.get(Quiz, quiz_id)
+#     questions = quiz.questions
+
+#     if request.method == 'POST':
+#         submission = QuizSubmission(
+#             user_id=session['user_id'],
+#             quiz_id=quiz.id,
+#             submission_time=datetime.utcnow()
+#         )
+#         db.session.add(submission)
+#         db.session.flush()  # So submission.id becomes available
+
+#         for question in questions:
+#             response_text = request.form.get(str(question.id))
+#             response = QuizResponse(
+#                 submission_id=submission.id,
+#                 question_id=question.id,
+#                 response_text=response_text
+#             )
+#             db.session.add(response)
+
+#         db.session.commit()  # Save submission and responses first
+
+#         # 🔽 Call stored procedure to check if student qualifies for certificate
+#         db.session.execute(text(
+#             "CALL generate_certificate_if_eligible(:user_id, :course_id)"
+#         ), {
+#             "user_id": session['user_id'],
+#             "course_id": quiz.course_id
+#         })
+#         db.session.commit()
+
+#         return redirect(f'/quiz_result/{submission.id}')
+
+#     return render_template('attend_quiz.html', quiz=quiz, questions=questions)
 
 @app.route('/view_quiz_results/<int:quiz_id>')
 def view_quiz_results(quiz_id):
@@ -393,6 +433,24 @@ def ensure_certificate_pdf(student_id, course_id):
         c.drawString(100, 700, f"Congratulations, Student {student_id}!")
         c.drawString(100, 675, f"You've completed Course {course_id}.")
         c.save()
+# def get_course_status(user_id, course_id):
+#     # No need to import db if it's already defined in your app.py
+#     with db.engine.connect() as connection:
+#         result = connection.execute(
+#             text("CALL get_course_completion_status(:user_id, :course_id)"),
+#             {"user_id": user_id, "course_id": course_id}
+#         )
+#         return [dict(row) for row in result]
+# def get_course_completion_status(user_id, course_id):
+#     # Call the stored procedure to get the course completion status
+#     result = db.session.execute(
+#         text("CALL get_course_completion_status(:user_id, :course_id)"),
+#         {"user_id": user_id, "course_id": course_id}
+#     ).fetchone()
+
+#     if result:
+#         return result[0]  # Assuming the stored procedure returns a status like 'Completed' or 'In Progress'
+#     return None
 
 @app.route('/course_completion/<student_id>/<course_id>')
 def course_completion(student_id, course_id):
@@ -408,6 +466,62 @@ def course_completion(student_id, course_id):
 def download_certificate(certificate_url):
     certificate_directory = os.path.join(app.root_path, 'static', 'certificates')
     return send_from_directory(certificate_directory, certificate_url, as_attachment=True)
+
+def get_user_progress(user_id, course_id):
+    # Use the database session to execute the stored procedure
+    result = db.session.execute(
+        text("CALL get_user_progress(:user_id, :course_id)"),
+        {"user_id": user_id, "course_id": course_id}
+    ).fetchone()
+    
+    # Return the progress (percentage)
+    print(f"Stored Procedure result: {result}") 
+    return result[0] if result else None
+
+@app.route('/progress/<int:course_id>')
+def show_progress(course_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))  # Ensure the user is logged in
+
+    user_id = session['user_id']
+
+    # Call the function to get the progress
+    progress_percent = get_user_progress(user_id, course_id)
+    
+    if progress_percent is None:
+        flash('Unable to fetch progress. Please try again later.', 'error')
+        return redirect(url_for('my_courses'))
+
+    return render_template('show_progress.html', progress=progress_percent, course_id=course_id)
+
+def get_course_completion_status(user_id, course_id):
+    result = db.session.execute(
+        text("CALL get_course_completion_status(:user_id, :course_id)"),
+        {"user_id": user_id, "course_id": course_id}
+    ).fetchone()
+
+    if result:
+        try:
+            # Accessing by index or key depending on how SQLAlchemy returns it
+            return result[0] or result['progress_percent']
+        except (IndexError, KeyError):
+            return None
+    return None
+
+@app.route('/course_completion/<int:course_id>')
+def show_course_completion(course_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    user_id = session['user_id']
+    progress = get_course_completion_status(user_id, course_id)
+
+    if progress is None:
+        flash('Unable to fetch course completion status. Please try again later.', 'error')
+        return redirect(url_for('my_courses'))
+
+    return render_template('show_course_completion.html', progress=progress, course_id=course_id)
+
 
 if __name__ == '__main__':
     app.run(debug=True)

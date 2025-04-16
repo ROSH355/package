@@ -158,3 +158,20 @@ footer {
   bottom: 10px;       /* Distance from the bottom of the card */
   right: 10px;        /* Distance from the right side of the card */
 }
+.progress-container {
+  margin: 10px 0;
+}
+
+.progress-bar {
+  width: 100%;
+  background-color: #e0e0e0;
+  border-radius: 10px;
+  height: 20px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  background-color: #4caf50;
+  height: 100%;
+  transition: width 0.3s ease-in-out;
+}
