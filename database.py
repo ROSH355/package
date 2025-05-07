@@ -21,7 +21,6 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-# Define the User model
 class User(db.Model):
     __tablename__='users'
     user_id = db.Column(db.Integer, primary_key=True)
@@ -120,7 +119,6 @@ def register():
         db.session.commit()
 
         session['user_id'] = new_user.user_id
-        # in both register() and login()
         session['role'] = new_user.role.lower()
 
 
@@ -139,7 +137,6 @@ def login():
 
         if user and bcrypt.checkpw(password.encode('utf-8'), user.password_hash.encode('utf-8')):
             session['user_id'] = user.user_id
-            # in both register() and login()
             session['role'] = user.role.lower()
             print("Session role after login:", session['role'])
 
@@ -163,12 +160,11 @@ def create_course():
     if request.method == 'POST':
         title = request.form['title']
         description = request.form['description']
-        instructor_email = request.form['email']  # or get from session
+        instructor_email = request.form['email']  
         
         instructor = User.query.filter_by(email=instructor_email, role='Instructor').first()
         
         if instructor:
-            # Prevent creating the same course with the same title by the same instructor
             existing_course = Course.query.filter_by(title=title, instructor_id=instructor.user_id).first()
             if existing_course:
                 return "This course already exists for this instructor.", 400
@@ -177,7 +173,6 @@ def create_course():
             db.session.add(new_course)
             db.session.commit()
             
-            # Redirect to the add lessons page for the newly created course
             return redirect(url_for('addlessons', course_id=new_course.course_id))
         else:
             return "Instructor not found", 404
@@ -206,7 +201,6 @@ def enroll(course_id):
     
     user_id = session['user_id']
     
-    # Avoid duplicate enrollments
     already_enrolled = Enrollment.query.filter_by(user_id=user_id, course_id=course_id).first()
     if already_enrolled:
         return "You are already enrolled in this course."
@@ -220,7 +214,7 @@ def enroll(course_id):
 @app.route('/my_courses')
 def my_courses():
     if 'user_id' not in session:
-        return redirect(url_for('login'))  # Ensure the user is logged in
+        return redirect(url_for('login')) 
 
     user_id = session['user_id']
     user = User.query.get(user_id)
@@ -233,7 +227,6 @@ def my_courses():
         enrollments = Enrollment.query.filter_by(user_id=user_id).all()
         courses = [Course.query.get(enrollment.course_id) for enrollment in enrollments]
 
-        # Attach related quizzes and lessons for each course
         for course in courses:
             course.lessons = Lesson.query.filter_by(course_id=course.course_id).all()
             course.quizzes = Quiz.query.filter_by(course_id=course.course_id).all()
@@ -241,7 +234,7 @@ def my_courses():
         return render_template('my_courses.html', courses=courses)
     else:
         flash("You are not authorized to view this page.", "error")
-        return redirect(url_for('courses'))  # Redirect to 'show_courses' instead of 'courses'
+        return redirect(url_for('courses'))
 
 
 @app.route('/addlessons/<int:course_id>', methods=['GET', 'POST'])
@@ -273,7 +266,7 @@ def addlessons(course_id):
         db.session.commit()
 
         flash('Lesson added successfully!')
-        return redirect(url_for('show_courses'))  # Redirect to courses page after adding lesson
+        return redirect(url_for('show_courses')) 
 
     return render_template('addlessons.html', course=course)
 
@@ -412,24 +405,20 @@ def download_certificate(certificate_url):
     return send_from_directory(certificate_directory, certificate_url, as_attachment=True)
 
 def get_user_progress(user_id, course_id):
-    # Use the database session to execute the stored procedure
     result = db.session.execute(
         text("CALL get_user_progress(:user_id, :course_id)"),
         {"user_id": user_id, "course_id": course_id}
     ).fetchone()
     
-    # Return the progress (percentage)
     print(f"Stored Procedure result: {result}") 
     return result[0] if result else None
 
 @app.route('/progress/<int:course_id>')
 def show_progress(course_id):
     if 'user_id' not in session:
-        return redirect(url_for('login'))  # Ensure the user is logged in
-
+        return redirect(url_for('login'))  
     user_id = session['user_id']
 
-    # Call the function to get the progress
     progress_percent = get_user_progress(user_id, course_id)
     
     if progress_percent is None:
@@ -446,7 +435,6 @@ def get_course_completion_status(user_id, course_id):
 
     if result:
         try:
-            # Accessing by index or key depending on how SQLAlchemy returns it
             return result[0] or result['progress_percent']
         except (IndexError, KeyError):
             return None
@@ -476,7 +464,6 @@ def cleanup_old_responses():
         flash("Only instructors can perform cleanup.", "error")
         return redirect(url_for('login'))
 
-    # Delete responses older than 30 days
     cutoff = datetime.now(india) - timedelta(days=1)
     try:
         db.session.execute(text("CALL DeleteOldResponses(:cutoff)"), {"cutoff": cutoff})
@@ -486,7 +473,7 @@ def cleanup_old_responses():
         db.session.rollback()
         flash(f"Failed to clean old responses: {str(e)}", "error")
 
-    return redirect(url_for('show_courses'))  # or wherever you want to go after cleanup
+    return redirect(url_for('show_courses')) 
 
 if __name__ == '__main__':
     app.run(debug=True)
