@@ -7,7 +7,9 @@ import pymysql
 import os
 from reportlab.pdfgen import canvas
 from sqlalchemy import text
+import pytz
 
+india = pytz.timezone('Asia/Kolkata')
 pymysql.install_as_MySQLdb()
 
 
@@ -19,7 +21,6 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-# Define the User model
 class User(db.Model):
     __tablename__='users'
     user_id = db.Column(db.Integer, primary_key=True)
@@ -82,7 +83,7 @@ class QuizResponse(db.Model):
     quiz_id = db.Column(db.Integer, db.ForeignKey('quizzes.quiz_id'))
     user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'))
     score = db.Column(db.Integer)
-    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    submitted_at = db.Column(db.DateTime, default=lambda: datetime.now(india))
     quiz = db.relationship('Quiz', backref=db.backref('responses', lazy=True))
     user = db.relationship('User', backref=db.backref('quiz_responses', lazy=True))
 
@@ -118,7 +119,6 @@ def register():
         db.session.commit()
 
         session['user_id'] = new_user.user_id
-        # in both register() and login()
         session['role'] = new_user.role.lower()
 
 
@@ -137,7 +137,6 @@ def login():
 
         if user and bcrypt.checkpw(password.encode('utf-8'), user.password_hash.encode('utf-8')):
             session['user_id'] = user.user_id
-            # in both register() and login()
             session['role'] = user.role.lower()
             print("Session role after login:", session['role'])
 
@@ -161,12 +160,11 @@ def create_course():
     if request.method == 'POST':
         title = request.form['title']
         description = request.form['description']
-        instructor_email = request.form['email']  # or get from session
+        instructor_email = request.form['email']  
         
         instructor = User.query.filter_by(email=instructor_email, role='Instructor').first()
         
         if instructor:
-            # Prevent creating the same course with the same title by the same instructor
             existing_course = Course.query.filter_by(title=title, instructor_id=instructor.user_id).first()
             if existing_course:
                 return "This course already exists for this instructor.", 400
@@ -175,7 +173,6 @@ def create_course():
             db.session.add(new_course)
             db.session.commit()
             
-            # Redirect to the add lessons page for the newly created course
             return redirect(url_for('addlessons', course_id=new_course.course_id))
         else:
             return "Instructor not found", 404
@@ -204,7 +201,6 @@ def enroll(course_id):
     
     user_id = session['user_id']
     
-    # Avoid duplicate enrollments
     already_enrolled = Enrollment.query.filter_by(user_id=user_id, course_id=course_id).first()
     if already_enrolled:
         return "You are already enrolled in this course."
@@ -218,7 +214,7 @@ def enroll(course_id):
 @app.route('/my_courses')
 def my_courses():
     if 'user_id' not in session:
-        return redirect(url_for('login'))  # Ensure the user is logged in
+        return redirect(url_for('login')) 
 
     user_id = session['user_id']
     user = User.query.get(user_id)
@@ -231,7 +227,6 @@ def my_courses():
         enrollments = Enrollment.query.filter_by(user_id=user_id).all()
         courses = [Course.query.get(enrollment.course_id) for enrollment in enrollments]
 
-        # Attach related quizzes and lessons for each course
         for course in courses:
             course.lessons = Lesson.query.filter_by(course_id=course.course_id).all()
             course.quizzes = Quiz.query.filter_by(course_id=course.course_id).all()
@@ -239,7 +234,7 @@ def my_courses():
         return render_template('my_courses.html', courses=courses)
     else:
         flash("You are not authorized to view this page.", "error")
-        return redirect(url_for('courses'))  # Redirect to 'show_courses' instead of 'courses'
+        return redirect(url_for('courses'))
 
 
 @app.route('/addlessons/<int:course_id>', methods=['GET', 'POST'])
@@ -271,7 +266,7 @@ def addlessons(course_id):
         db.session.commit()
 
         flash('Lesson added successfully!')
-        return redirect(url_for('show_courses'))  # Redirect to courses page after adding lesson
+        return redirect(url_for('show_courses')) 
 
     return render_template('addlessons.html', course=course)
 
@@ -353,46 +348,6 @@ def attend_quiz(quiz_id):
         return render_template('quiz_result.html', score=score, total=len(questions))
 
     return render_template('attend_quiz.html', quiz=quiz, questions=questions)
-# @app.route('/attend_quiz/<int:quiz_id>', methods=['GET', 'POST'])
-# def attend_quiz(quiz_id):
-#     if 'user_id' not in session:
-#         return redirect('/login')
-
-#     quiz = db.session.get(Quiz, quiz_id)
-#     questions = quiz.questions
-
-#     if request.method == 'POST':
-#         submission = QuizSubmission(
-#             user_id=session['user_id'],
-#             quiz_id=quiz.id,
-#             submission_time=datetime.utcnow()
-#         )
-#         db.session.add(submission)
-#         db.session.flush()  # So submission.id becomes available
-
-#         for question in questions:
-#             response_text = request.form.get(str(question.id))
-#             response = QuizResponse(
-#                 submission_id=submission.id,
-#                 question_id=question.id,
-#                 response_text=response_text
-#             )
-#             db.session.add(response)
-
-#         db.session.commit()  # Save submission and responses first
-
-#         # 🔽 Call stored procedure to check if student qualifies for certificate
-#         db.session.execute(text(
-#             "CALL generate_certificate_if_eligible(:user_id, :course_id)"
-#         ), {
-#             "user_id": session['user_id'],
-#             "course_id": quiz.course_id
-#         })
-#         db.session.commit()
-
-#         return redirect(f'/quiz_result/{submission.id}')
-
-#     return render_template('attend_quiz.html', quiz=quiz, questions=questions)
 
 @app.route('/view_quiz_results/<int:quiz_id>')
 def view_quiz_results(quiz_id):
@@ -433,24 +388,6 @@ def ensure_certificate_pdf(student_id, course_id):
         c.drawString(100, 700, f"Congratulations, Student {student_id}!")
         c.drawString(100, 675, f"You've completed Course {course_id}.")
         c.save()
-# def get_course_status(user_id, course_id):
-#     # No need to import db if it's already defined in your app.py
-#     with db.engine.connect() as connection:
-#         result = connection.execute(
-#             text("CALL get_course_completion_status(:user_id, :course_id)"),
-#             {"user_id": user_id, "course_id": course_id}
-#         )
-#         return [dict(row) for row in result]
-# def get_course_completion_status(user_id, course_id):
-#     # Call the stored procedure to get the course completion status
-#     result = db.session.execute(
-#         text("CALL get_course_completion_status(:user_id, :course_id)"),
-#         {"user_id": user_id, "course_id": course_id}
-#     ).fetchone()
-
-#     if result:
-#         return result[0]  # Assuming the stored procedure returns a status like 'Completed' or 'In Progress'
-#     return None
 
 @app.route('/course_completion/<student_id>/<course_id>')
 def course_completion(student_id, course_id):
@@ -468,24 +405,20 @@ def download_certificate(certificate_url):
     return send_from_directory(certificate_directory, certificate_url, as_attachment=True)
 
 def get_user_progress(user_id, course_id):
-    # Use the database session to execute the stored procedure
     result = db.session.execute(
         text("CALL get_user_progress(:user_id, :course_id)"),
         {"user_id": user_id, "course_id": course_id}
     ).fetchone()
     
-    # Return the progress (percentage)
     print(f"Stored Procedure result: {result}") 
     return result[0] if result else None
 
 @app.route('/progress/<int:course_id>')
 def show_progress(course_id):
     if 'user_id' not in session:
-        return redirect(url_for('login'))  # Ensure the user is logged in
-
+        return redirect(url_for('login'))  
     user_id = session['user_id']
 
-    # Call the function to get the progress
     progress_percent = get_user_progress(user_id, course_id)
     
     if progress_percent is None:
@@ -502,7 +435,6 @@ def get_course_completion_status(user_id, course_id):
 
     if result:
         try:
-            # Accessing by index or key depending on how SQLAlchemy returns it
             return result[0] or result['progress_percent']
         except (IndexError, KeyError):
             return None
@@ -522,6 +454,26 @@ def show_course_completion(course_id):
 
     return render_template('show_course_completion.html', progress=progress, course_id=course_id)
 
+from datetime import datetime, timedelta
+from sqlalchemy import text
+india = pytz.timezone('Asia/Kolkata')
+
+@app.route('/cleanup_old_responses')
+def cleanup_old_responses():
+    if 'role' not in session or session['role'] != 'instructor':
+        flash("Only instructors can perform cleanup.", "error")
+        return redirect(url_for('login'))
+
+    cutoff = datetime.now(india) - timedelta(days=1)
+    try:
+        db.session.execute(text("CALL DeleteOldResponses(:cutoff)"), {"cutoff": cutoff})
+        db.session.commit()
+        flash("Old quiz responses cleaned up successfully!", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Failed to clean old responses: {str(e)}", "error")
+
+    return redirect(url_for('show_courses')) 
 
 if __name__ == '__main__':
     app.run(debug=True)
