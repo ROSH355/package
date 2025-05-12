@@ -27,17 +27,7 @@
 
         <label>Order Number:</label><br>
         <input type="number" name="order_number"><br><br>
-
-        <label>Select Course:</label><br>
-        <select name="course_id">
-            {% for course in courses %}
-                <option value="{{ course.course_id }}" {% if selected_course_id|int == course.course_id %}selected{% endif %}>
-                    {{ course.title }}
-                </option>
-            {% endfor %}
-        </select>
         
-
         <input type="submit" value="Add Lesson">
     </form>
 </body>

@@ -301,7 +301,10 @@ def create_quiz(course_id):
 
 @app.route('/add_quiz_questions/<int:quiz_id>', methods=['GET', 'POST'])
 def add_quiz_questions(quiz_id):
+    quiz = Quiz.query.get_or_404(quiz_id)
+
     if request.method == 'POST':
+        action = request.form.get('action')
         question_text = request.form['question_text']
         option_a = request.form['option_a']
         option_b = request.form['option_b']
@@ -321,9 +324,15 @@ def add_quiz_questions(quiz_id):
         db.session.add(question)
         db.session.commit()
 
-        return redirect(url_for('add_quiz_questions', quiz_id=quiz_id))  # To add more questions
+        if action == 'add':
+            return redirect(url_for('add_quiz_questions', quiz_id=quiz_id))
+        elif action == 'finish':
+            # Redirect back to create_quiz.html for the same course
+            quiz = Quiz.query.get(quiz_id)
+            return redirect(url_for('create_quiz', course_id=quiz.course_id))
 
     return render_template('add_quiz_questions.html', quiz_id=quiz_id)
+
 
 @app.route('/attend_quiz/<int:quiz_id>', methods=['GET', 'POST'])
 def attend_quiz(quiz_id):
