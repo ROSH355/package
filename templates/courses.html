@@ -40,8 +40,8 @@
       <a href="{{ url_for('addlessons', course_id=course.course_id) }}" class="btn btn-success">Add Lesson</a>
       <a href="{{ url_for('create_quiz', course_id=course.course_id) }}" class="btn btn-success">Create Quiz</a>
       {% if session['role'] == 'instructor' %}
-    <a href="{{ url_for('cleanup_old_responses') }}" class="btn btn-danger mt-3">
-        🧹 Clean Up Old Quiz Responses
+    <a href="{{ url_for('view_quiz_results',quiz_id=quiz.quiz_id) }}" class="btn btn-danger mt-3">
+        View Quiz Results
     </a>
 {% endif %}
 
