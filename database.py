@@ -226,15 +226,19 @@ def my_courses():
     if user.role == 'student':
         enrollments = Enrollment.query.filter_by(user_id=user_id).all()
         courses = [Course.query.get(enrollment.course_id) for enrollment in enrollments]
-
-        for course in courses:
-            course.lessons = Lesson.query.filter_by(course_id=course.course_id).all()
-            course.quizzes = Quiz.query.filter_by(course_id=course.course_id).all()
-
-        return render_template('my_courses.html', courses=courses)
+    elif user.role == 'instructor':
+        courses = Course.query.filter_by(instructor_id=user_id).all()
     else:
         flash("You are not authorized to view this page.", "error")
-        return redirect(url_for('courses'))
+        return redirect(url_for('home'))
+
+    # Add lessons and quizzes for each course (optional, if needed in the template)
+    # for course in courses:
+    #     course.lessons = Lesson.query.filter_by(course_id=course.course_id).all()
+    #     course.quizzes = Quiz.query.filter_by(course_id=course.course_id).all()
+
+    return render_template('my_courses.html', courses=courses)
+
 
 
 @app.route('/addlessons/<int:course_id>', methods=['GET', 'POST'])
