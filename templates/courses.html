@@ -1,61 +1,53 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>All Courses</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<meta charset="UTF-8">
+<title>All Courses</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
-  <div class="container">
-    <div class="nav-row">
-      <a class="nav-item" href="/home">Home</a>
+<div class="container">
+  <div class="nav-row">
+    <a class="nav-item" href="/home">Home</a>
+    {% if session['role'] != 'student' %}
       <a class="nav-item" href="/create_course">Create Course</a>
-      <a class="nav-item" href="/my_courses">My Courses</a>
-      <a class="nav-item" href="/logout">Logout</a>
-    </div>
-
-    <h1 class="hero-header">Available Courses</h1>
-
-    <div class="course-grid">
-      {% for course in courses %}
-        <div class="course-card">
-          <div class="course-title">
-            <a href="{{ url_for('course_page', course_id=course.course_id) }}">
-              {{ course.title }}
-            </a>
-          </div>
-          
-          <div class="course-desc">{{ course.description }}</div>
-          <div class="instructor-name">Instructor: {{ course.instructor.full_name }}</div>
-          {% if session['role'] == 'student' %}
-  {% if course.course_id not in enrolled_course_ids %}
-    <a href="{{ url_for('enroll', course_id=course.course_id) }}" class="cta-button">Enroll</a>
-  {% endif %}
-{% endif %}
-
-{% if session['role'] == 'instructor' %}
-  {% if course.instructor_id == session['user_id'] %}
-    <div class="course-actions">
-      <a href="{{ url_for('addlessons', course_id=course.course_id) }}" class="btn btn-success">Add Lesson</a>
-      <a href="{{ url_for('create_quiz', course_id=course.course_id) }}" class="btn btn-success">Create Quiz</a>
-      {% if session['role'] == 'instructor' %}
-    <a href="{{ url_for('view_quiz_results',quiz_id=quiz.quiz_id) }}" class="btn btn-danger mt-3">
-        View Quiz Results
-    </a>
-{% endif %}
-
-    </div>
-  {% endif %}
-{% endif %}
-
-          
-
-          
-        </div>
-      {% endfor %}
-    </div>
+    {% endif %}
+    <a class="nav-item" href="/my_courses">My Courses</a>
+    <a class="nav-item" href="/logout">Logout</a>
   </div>
+
+  <h1 class="hero-header">Available Courses</h1>
+
+  <div class="course-grid">
+    {% for course in courses %}
+      <div class="course-card">
+        <div class="course-title">
+          <a href="{{ url_for('course_page', course_id=course.course_id) }}">
+            {{ course.title }}
+          </a>
+        </div>
+        
+        <div class="course-desc">{{ course.description }}</div>
+        <div class="instructor-name">Instructor: {{ course.instructor.full_name }}</div>
+        
+        {% if session['role'] == 'student' %}
+          {% if course.course_id not in enrolled_course_ids %}
+            <a href="{{ url_for('enroll', course_id=course.course_id) }}" class="cta-button">Enroll</a>
+          {% endif %}
+        {% endif %}
+
+        {% if session['role'] == 'instructor' and course.instructor_id == session['user_id'] %}
+          <div class="course-actions">
+            <a href="{{ url_for('addlessons', course_id=course.course_id) }}" class="btn btn-success">Add Lesson</a>
+            <a href="{{ url_for('create_quiz', course_id=course.course_id) }}" class="btn btn-success">Create Quiz</a>
+          </div>
+        {% endif %}
+
+      </div>
+    {% endfor %}
+  </div>
+</div>
 
 </body>
 </html>
