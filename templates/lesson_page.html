@@ -18,7 +18,13 @@
 
     <div class="lesson-details">
       <p><strong>Duration:</strong> {{ lesson.duration }} minutes</p>
-      <p><strong>Video:</strong> <a href="{{ lesson.video_url }}" target="_blank">Watch here</a></p>
+      <div class="video-container">
+        <iframe width="560" height="315" 
+          src="{{ lesson.video_url | replace('watch?v=', 'embed/') }}" 
+          frameborder="0" 
+          allowfullscreen>
+        </iframe>
+      </div>
       <p><strong>Description:</strong> {{ lesson.description }}</p>
     </div>
 

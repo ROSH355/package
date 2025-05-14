@@ -1,14 +1,25 @@
 <!DOCTYPE html>
 <html>
-<head><title>Create Quiz</title></head>
+<head>
+  <title>Create Quiz</title>
+</head>
 <body>
+
+  <!-- Navigation -->
+  <div class="nav-row">
+    <a href="{{ url_for('show_courses') }}">Home</a>
+  </div>
+
   <h2>Create Quiz</h2>
   <form method="POST">
     <label>Quiz Title:</label><br>
     <input type="text" name="title"><br>
+
     <label>Total Marks:</label><br>
     <input type="number" name="total_marks"><br><br>
+
     <input type="submit" value="Create Quiz">
   </form>
+
 </body>
 </html>
