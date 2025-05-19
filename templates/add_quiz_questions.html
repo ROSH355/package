@@ -1,20 +1,24 @@
 <!DOCTYPE html>
 <html>
-<head><title>Add Questions</title></head>
-<body>
-  <h2>Add Question</h2>
-  <form method="POST">
-    <textarea name="question_text" placeholder="Enter question here"></textarea><br>
-    <input type="text" name="option_a" placeholder="Option A"><br>
-    <input type="text" name="option_b" placeholder="Option B"><br>
-    <input type="text" name="option_c" placeholder="Option C"><br>
-    <input type="text" name="option_d" placeholder="Option D"><br>
-    <label>Correct Option (A/B/C/D):</label>
-    <input type="text" name="correct_option" maxlength="1"><br><br>
-    <button type="submit" name="action" value="add">Add Another Question</button>
-
-    <button type="submit" name="action" value="finish">Finish</button>
-
-  </form>
+<head>
+  <title>Add Questions</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="addquizqnspage">
+  <div class="quiz-container">
+    <h2>Add Question</h2>
+    <form method="POST">
+      <textarea name="question_text" placeholder="Enter question here"></textarea><br>
+      <input type="text" name="option_a" placeholder="Option A"><br>
+      <input type="text" name="option_b" placeholder="Option B"><br>
+      <input type="text" name="option_c" placeholder="Option C"><br>
+      <input type="text" name="option_d" placeholder="Option D"><br>
+      <label>Correct Option (A/B/C/D):</label>
+      <input type="text" name="correct_option" maxlength="1"><br><br>
+      <button type="submit" name="action" value="add">Add Another Question</button>
+      <button type="submit" name="action" value="finish">Finish</button>
+    </form>
+  </div>
 </body>
+
 </html>
