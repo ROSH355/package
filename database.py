@@ -240,7 +240,7 @@ def my_courses():
         flash("You are not authorized to view this page.", "error")
         return redirect(url_for('home'))
 
-    return render_template('my_courses.html', courses=courses)
+    return render_template('my_courses.html', courses=courses,role=user.role)
 
 
 
