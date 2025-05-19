@@ -2,24 +2,25 @@
 <html>
 <head>
   <title>Create Quiz</title>
+  <link rel="stylesheet" href="/static/style.css">
 </head>
-<body>
+<body class="createquizpage">
 
   <!-- Navigation -->
-  <div class="nav-row">
+  <div class="nav-roww">
     <a href="{{ url_for('show_courses') }}">Home</a>
   </div>
+  <div class="quizcontainer">
+    <h2>Create Quiz</h2>
+    <form method="POST">
+      <label>Quiz Title:</label><br>
+      <input type="text" name="title"><br>
 
-  <h2>Create Quiz</h2>
-  <form method="POST">
-    <label>Quiz Title:</label><br>
-    <input type="text" name="title"><br>
+      <label>Total Marks:</label><br>
+      <input type="number" name="total_marks"><br><br>
 
-    <label>Total Marks:</label><br>
-    <input type="number" name="total_marks"><br><br>
-
-    <input type="submit" value="Create Quiz">
-  </form>
-
+      <input type="submit" value="Create Quiz">
+    </form>
+  </div>
 </body>
 </html>

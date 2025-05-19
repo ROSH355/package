@@ -37,8 +37,10 @@ class Course(db.Model):
     description = db.Column(db.Text, nullable=True)
     instructor_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
     created_at = db.Column(db.TIMESTAMP, server_default=func.now())
+    image_path = db.Column(db.String(255))
     instructor = db.relationship('User', backref='courses')
     quizzes = db.relationship('Quiz', backref='course', lazy=True)
+
 class Enrollment(db.Model):
     __tablename__ = 'enrollments'
     enrollment_id = db.Column(db.Integer, primary_key=True)
@@ -161,22 +163,28 @@ def create_course():
         title = request.form['title']
         description = request.form['description']
         instructor_email = request.form['email']  
-        
+        image_path = request.form.get('image_path')  # <-- New line
+
         instructor = User.query.filter_by(email=instructor_email, role='Instructor').first()
-        
+
         if instructor:
             existing_course = Course.query.filter_by(title=title, instructor_id=instructor.user_id).first()
             if existing_course:
                 return "This course already exists for this instructor.", 400
-            
-            new_course = Course(title=title, description=description, instructor_id=instructor.user_id)
+
+            new_course = Course(
+                title=title,
+                description=description,
+                instructor_id=instructor.user_id,
+                image_path=image_path  # <-- Save image path
+            )
             db.session.add(new_course)
             db.session.commit()
-            
+
             return redirect(url_for('addlessons', course_id=new_course.course_id))
         else:
             return "Instructor not found", 404
-    
+
     return render_template('create_course.html')
 
 # 
@@ -231,11 +239,6 @@ def my_courses():
     else:
         flash("You are not authorized to view this page.", "error")
         return redirect(url_for('home'))
-
-    # Add lessons and quizzes for each course (optional, if needed in the template)
-    # for course in courses:
-    #     course.lessons = Lesson.query.filter_by(course_id=course.course_id).all()
-    #     course.quizzes = Quiz.query.filter_by(course_id=course.course_id).all()
 
     return render_template('my_courses.html', courses=courses)
 

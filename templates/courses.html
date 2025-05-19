@@ -1,53 +1,60 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>All Courses</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <meta charset="UTF-8">
+  <title>All Courses</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/static/style.css">
 </head>
-<body>
+<body class="coursespage">
 
 <div class="container">
+  <!-- Navigation -->
   <div class="nav-row">
-    <a class="nav-item" href="/home">Home</a>
-    {% if session['role'] != 'student' %}
-      <a class="nav-item" href="/create_course">Create Course</a>
-    {% endif %}
-    <a class="nav-item" href="/my_courses">My Courses</a>
-    <a class="nav-item" href="/logout">Logout</a>
+      <a class="nav-item" href="/home">Home</a>
+      {% if session['role'] != 'student' %}
+        <a class="nav-item" href="/create_course">Create Course</a>
+      {% endif %}
+      <a class="nav-item" href="/my_courses">My Courses</a>
+      <a class="nav-item" href="/logout">Logout</a>
   </div>
 
-  <h1 class="hero-header">Available Courses</h1>
+  <h1 class="mb-4 text-center">Available Courses</h1>
 
-  <div class="course-grid">
+  <!-- Course Cards Grid -->
+  <div class="row">
     {% for course in courses %}
-      <div class="course-card">
-        <div class="course-title">
-          <a href="{{ url_for('course_page', course_id=course.course_id) }}">
-            {{ course.title }}
-          </a>
-        </div>
-        
-        <div class="course-desc">{{ course.description }}</div>
-        <div class="instructor-name">Instructor: {{ course.instructor.full_name }}</div>
-        
-        {% if session['role'] == 'student' %}
-          {% if course.course_id not in enrolled_course_ids %}
-            <a href="{{ url_for('enroll', course_id=course.course_id) }}" class="cta-button">Enroll</a>
-          {% endif %}
-        {% endif %}
+      <div class="col-md-4 d-flex justify-content-center mb-4">
+        <div class="card" style="width: 18rem;">
+          <img src="{{ url_for('static', filename='images/' + course.image_path) }}" alt="Course Image" width="286.5">
+          <div class="card-body">
+            <h5 class="card-title">
+              <a href="{{ url_for('course_page', course_id=course.course_id) }}" class="text-decoration-none">
+                {{ course.title }}
+              </a>
+            </h5>
+            <p class="card-text">{{ course.description }}</p>
+            <p class="card-text">
+              <small class="text-muted">Instructor: {{ course.instructor.full_name }}</small>
+            </p>
 
-        {% if session['role'] == 'instructor' and course.instructor_id == session['user_id'] %}
-          <div class="course-actions">
-            <a href="{{ url_for('addlessons', course_id=course.course_id) }}" class="btn btn-success">Add Lesson</a>
-            <a href="{{ url_for('create_quiz', course_id=course.course_id) }}" class="btn btn-success">Create Quiz</a>
+            {% if session['role'] == 'student' %}
+              {% if course.course_id not in enrolled_course_ids %}
+                <a href="{{ url_for('enroll', course_id=course.course_id) }}" class="btn btn-primary">Enroll</a>
+              {% endif %}
+            {% endif %}
+
+            {% if session['role'] == 'instructor' and course.instructor_id == session['user_id'] %}
+              <a href="{{ url_for('addlessons', course_id=course.course_id) }}" class="btn btn-success mt-2">Add Lesson</a>
+              <a href="{{ url_for('create_quiz', course_id=course.course_id) }}" class="btn btn-success mt-2">Create Quiz</a>
+            {% endif %}
           </div>
-        {% endif %}
-
+        </div>
       </div>
     {% endfor %}
   </div>
 </div>
-
 </body>
 </html>
