@@ -544,5 +544,9 @@ def cleanup_old_responses():
 #     course = Course.query.get_or_404(course_id)
 #     return render_template('course_completion.html', course=course)
 
+@app.route('/home')
+def home():
+    return render_template('home.html')
+
 if __name__ == '__main__':
     app.run(debug=True)
