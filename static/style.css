@@ -371,3 +371,7 @@ body.attendquizpage {
       background-image: url("/static/websitepics/addquizqns.jpg");
       color:white;
     }
+
+    .progress{
+      margin:10px;
+    }

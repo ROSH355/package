@@ -96,7 +96,6 @@ class Certificate(db.Model):
     course_id = db.Column(db.Integer, db.ForeignKey('courses.course_id'), nullable=False)
     issued_at = db.Column(db.TIMESTAMP, server_default=func.now())
     certificate_url = db.Column(db.String(255), nullable=False)
-
     user = db.relationship('User', backref='certificates')
     course = db.relationship('Course', backref='certificates')
 
@@ -222,27 +221,45 @@ def enroll(course_id):
 @app.route('/my_courses')
 def my_courses():
     if 'user_id' not in session:
+        flash("You need to log in.", "warning")
         return redirect(url_for('login')) 
 
     user_id = session['user_id']
     user = User.query.get(user_id)
-
     if not user:
         flash("User not found.", "error")
         return redirect(url_for('login'))
 
-    if user.role == 'student':
+    course_progress = []
+    if user.role.lower() == 'student':
         enrollments = Enrollment.query.filter_by(user_id=user_id).all()
-        courses = [Course.query.get(enrollment.course_id) for enrollment in enrollments]
-    elif user.role == 'instructor':
+        for enrollment in enrollments:
+            course = Course.query.get(enrollment.course_id)
+            if not course:
+                continue  # Skip invalid courses
+            progress = get_course_completion_status(user_id, course.course_id)
+            is_complete = progress is not None and progress == 100
+            course_progress.append({
+                'course': course,
+                'progress': progress if progress is not None else 0,
+                'is_complete': is_complete
+            })
+    elif user.role.lower() == 'instructor':
         courses = Course.query.filter_by(instructor_id=user_id).all()
+        course_progress = [{'course': course, 'progress': 0, 'is_complete': False} for course in courses]
     else:
         flash("You are not authorized to view this page.", "error")
         return redirect(url_for('home'))
 
-    return render_template('my_courses.html', courses=courses,role=user.role)
+    # Debug: Print session and course data
+    print("Session:", session)
+    # print("Course Progress:", [(item['course'].id, item['progress'], item['is_complete']) for item in course_progress])
 
-
+    return render_template(
+        'my_courses.html',
+        course_progress=course_progress,
+        role=user.role.lower()
+    )
 
 @app.route('/addlessons/<int:course_id>', methods=['GET', 'POST'])
 def addlessons(course_id):
@@ -386,8 +403,8 @@ def get_certificate_for_student(student_id, course_id):
         text("CALL get_certificate_for_student(:student_id, :course_id)"),
         {"student_id": student_id, "course_id": course_id}
     ).fetchone()
+    return {'certificate_url': result[0]} if result and len(result) > 0 else None
 
-    return result
 
 def ensure_certificate_pdf(student_id, course_id):
     filename = f"{student_id}_{course_id}.pdf"
@@ -404,16 +421,38 @@ def ensure_certificate_pdf(student_id, course_id):
         c.drawString(100, 700, f"Congratulations, Student {student_id}!")
         c.drawString(100, 675, f"You've completed Course {course_id}.")
         c.save()
+def get_course_by_id(course_id):
+    return Course.query.filter_by(course_id=course_id).first()
 
-@app.route('/course_completion/<student_id>/<course_id>')
+# @app.route('/course_completion/<student_id>/<course_id>')
+# def course_completion(student_id, course_id):
+#     student = get_student_by_id(student_id)
+#     certificate = get_certificate_for_student(student_id, course_id)
+#     course = get_course_by_id(course_id)
+#     if certificate:
+#         ensure_certificate_pdf(student_id, course_id)
+
+#     return render_template('course_completion.html', student=student, certificate=certificate,course=course)
+@app.route('/course_completion/<int:student_id>/<int:course_id>')
 def course_completion(student_id, course_id):
-    student = get_student_by_id(student_id)
-    certificate = get_certificate_for_student(student_id, course_id)
-
+    print(f"Accessing course_completion with student_id={student_id}, course_id={course_id}")
+    student = User.query.get(student_id)
+    if not student:
+        flash("Student not found.", "error")
+        return redirect(url_for('my_courses'))
+    course = Course.query.get(course_id)
+    if not course:
+        flash("Course not found.", "error")
+        return redirect(url_for('my_courses'))
+    result = db.session.execute(
+        text("CALL get_certificate_for_student(:student_id, :course_id)"),
+        {"student_id": student_id, "course_id": course_id}
+    ).fetchone()
+    certificate = result[0] if result and len(result) > 0 else None
     if certificate:
         ensure_certificate_pdf(student_id, course_id)
+    return render_template('course_completion.html', student=student, certificate=certificate, course=course)
 
-    return render_template('course_completion.html', student=student, certificate=certificate)
 
 @app.route('/download_certificate/<certificate_url>')
 def download_certificate(certificate_url):
@@ -449,11 +488,8 @@ def get_course_completion_status(user_id, course_id):
         {"user_id": user_id, "course_id": course_id}
     ).fetchone()
 
-    if result:
-        try:
-            return result[0] or result['progress_percent']
-        except (IndexError, KeyError):
-            return None
+    if result and len(result) > 0:
+        return result[0]  # Progress percentage from stored procedure
     return None
 
 @app.route('/course_completion/<int:course_id>')
@@ -490,6 +526,23 @@ def cleanup_old_responses():
         flash(f"Failed to clean old responses: {str(e)}", "error")
 
     return redirect(url_for('show_courses')) 
+
+# from flask_login import current_user
+# @app.route('/courses/<int:course_id>/completion')
+# # @login_required
+# def completion(course_id):
+#     enrollment = Enrollment.query.filter_by(course_id=course_id, user_id=current_user.id).first()
+
+#     if not enrollment:
+#         flash("You are not enrolled in this course.", "warning")
+#         return redirect(url_for('my_courses'))
+
+#     if enrollment.progress < 100:
+#         flash("You need to complete the course to view the certificate.", "warning")
+#         return redirect(url_for('my_courses'))
+
+#     course = Course.query.get_or_404(course_id)
+#     return render_template('course_completion.html', course=course)
 
 if __name__ == '__main__':
     app.run(debug=True)
