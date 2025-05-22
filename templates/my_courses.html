@@ -3,58 +3,67 @@
 <head>
   <meta charset="UTF-8">
   <title>My Courses</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-  <link rel="stylesheet" href="/static/style.css"> 
-  <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body class="mycoursespage">
-
   <div class="container">
     <div class="nav-row mb-4">
       <a class="nav-item" href="/home">Home</a>
       <a class="nav-item" href="/courses">All Courses</a>
       <a class="nav-item" href="/logout">Logout</a>
     </div>
-    
+
     <h1 class="hero-header mb-4">My Courses</h1>
 
     <div class="row row-cols-1 row-cols-md-3 g-4">
-      {% for course in courses %}
+      {% for item in course_progress %}
         <div class="col">
           <div class="card h-100">
             <div class="card-body">
-              <h5 class="card-title">{{ course.title }}</h5>
-              <p class="card-text">{{ course.description }}</p>
+              <h5 class="card-title">{{ item.course.title }}</h5>
+              <p class="card-text">{{ item.course.description }}</p>
+
+              <!-- Progress bar -->
+              <div class="mb-3">
+                <label>Progress: {{ item.progress }}%</label>
+                <div class="progress">
+                  <div class="progress-bar bg-info" role="progressbar"
+                       style="width: '{{ item.progress }}%';"
+                       aria-valuenow="{{ item.progress }}" aria-valuemin="0" aria-valuemax="100">
+                    {{ item.progress }}%
+                  </div>
+                </div>
+              </div>
 
               <!-- Lessons Dropdown -->
-              {% if course.lessons %}
-              <div class="dropdown mb-3">
-                <button class="btn btn-outline-primary dropdown-toggle w-100" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                  Lessons
-                </button>
-                <ul class="dropdown-menu w-100">
-                  {% for lesson in course.lessons %}
-                    <li><a class="dropdown-item" href="{{ url_for('lesson_page', lesson_id=lesson.lesson_id) }}">{{ lesson.title }}</a></li>
-                  {% endfor %}
-                </ul>
-              </div>
+              {% if item.course.lessons %}
+                <div class="dropdown mb-2">
+                  <button class="btn btn-outline-primary dropdown-toggle w-100" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    Lessons
+                  </button>
+                  <ul class="dropdown-menu w-100">
+                    {% for lesson in item.course.lessons %}
+                      <li><a class="dropdown-item" href="{{ url_for('lesson_page', lesson_id=lesson.lesson_id) }}">{{ lesson.title }}</a></li>
+                    {% endfor %}
+                  </ul>
+                </div>
               {% endif %}
 
               <!-- Quizzes Dropdown -->
-              {% if course.quizzes %}
-                <div class="dropdown">
+              {% if item.course.quizzes %}
+                <div class="dropdown mb-3">
                   <button class="btn btn-outline-success dropdown-toggle w-100" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     Quizzes
                   </button>
                   <ul class="dropdown-menu w-100">
-                    {% for quiz in course.quizzes %}
+                    {% for quiz in item.course.quizzes %}
                       <li>
-                        {% if role == 'instructor' %}
+                        {% if role|lower == 'instructor' %}
                           <a class="dropdown-item" href="{{ url_for('view_quiz_results', quiz_id=quiz.quiz_id) }}">
                             {{ quiz.title }} ({{ quiz.total_marks }} marks) - View Results
                           </a>
-                        {% elif role == 'student' %}
+                        {% elif role|lower == 'student' %}
                           <a class="dropdown-item" href="{{ url_for('attend_quiz', quiz_id=quiz.quiz_id) }}">
                             {{ quiz.title }} ({{ quiz.total_marks }} marks) - Attempt Quiz
                           </a>
@@ -65,7 +74,12 @@
                 </div>
               {% endif %}
 
-
+              <!-- View Certificate button if 100% progress -->
+              {% if item.is_complete %}
+                <a href="{{ url_for('course_completion', student_id=session.user_id, course_id=item.course.course_id) }}" class="btn btn-success w-100">
+                    View Certificate
+                </a>
+              {% endif %}
             </div>
           </div>
         </div>
@@ -73,7 +87,7 @@
     </div>
   </div>
 
-  <!-- Bootstrap JS (with Popper for dropdowns) -->
+  <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
