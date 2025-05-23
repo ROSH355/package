@@ -16,7 +16,7 @@ pymysql.install_as_MySQLdb()
 app = Flask(__name__)
 app.secret_key = 'supersecretkey123'
 # Configure MySQL database (adjust according to your setup)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:Jo36%40220705@localhost/e_learning'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:Radharam12345@localhost/e_learning'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -101,6 +101,9 @@ class Certificate(db.Model):
 
 
 from flask import session
+@app.route('/about')
+def about():
+    return render_template('about.html')
 
 @app.route('/signup', methods=['GET', 'POST'])
 def register():
@@ -543,7 +546,7 @@ def cleanup_old_responses():
 
 #     course = Course.query.get_or_404(course_id)
 #     return render_template('course_completion.html', course=course)
-
+@app.route('/')
 @app.route('/home')
 def home():
     return render_template('home.html')
