@@ -16,7 +16,7 @@ pymysql.install_as_MySQLdb()
 app = Flask(__name__)
 app.secret_key = 'supersecretkey123'
 # Configure MySQL database (adjust according to your setup)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:Radharam12345@localhost/e_learning'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:Jo36%40220705@localhost/e_learning'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
