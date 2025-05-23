@@ -509,43 +509,7 @@ def show_course_completion(course_id):
 
     return render_template('show_course_completion.html', progress=progress, course_id=course_id)
 
-from datetime import datetime, timedelta
-from sqlalchemy import text
-india = pytz.timezone('Asia/Kolkata')
 
-@app.route('/cleanup_old_responses')
-def cleanup_old_responses():
-    if 'role' not in session or session['role'] != 'instructor':
-        flash("Only instructors can perform cleanup.", "error")
-        return redirect(url_for('login'))
-
-    cutoff = datetime.now(india) - timedelta(days=1)
-    try:
-        db.session.execute(text("CALL DeleteOldResponses(:cutoff)"), {"cutoff": cutoff})
-        db.session.commit()
-        flash("Old quiz responses cleaned up successfully!", "success")
-    except Exception as e:
-        db.session.rollback()
-        flash(f"Failed to clean old responses: {str(e)}", "error")
-
-    return redirect(url_for('show_courses')) 
-
-# from flask_login import current_user
-# @app.route('/courses/<int:course_id>/completion')
-# # @login_required
-# def completion(course_id):
-#     enrollment = Enrollment.query.filter_by(course_id=course_id, user_id=current_user.id).first()
-
-#     if not enrollment:
-#         flash("You are not enrolled in this course.", "warning")
-#         return redirect(url_for('my_courses'))
-
-#     if enrollment.progress < 100:
-#         flash("You need to complete the course to view the certificate.", "warning")
-#         return redirect(url_for('my_courses'))
-
-#     course = Course.query.get_or_404(course_id)
-#     return render_template('course_completion.html', course=course)
 @app.route('/')
 @app.route('/home')
 def home():
