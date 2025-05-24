@@ -16,7 +16,7 @@ pymysql.install_as_MySQLdb()
 app = Flask(__name__)
 app.secret_key = 'supersecretkey123'
 # Configure MySQL database (adjust according to your setup)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:Jo36%40220705@localhost/e_learning'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:Radharam12345@localhost/e_learning'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -509,8 +509,9 @@ def show_course_completion(course_id):
 
     return render_template('show_course_completion.html', progress=progress, course_id=course_id)
 
-
+@app.route('/')
 @app.route('/home')
 def home():
-    return render_template('home.html')
+    return render_template('index.html')
+
 
