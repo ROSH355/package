@@ -8,7 +8,7 @@ import os
 from reportlab.pdfgen import canvas
 from sqlalchemy import text
 import pytz
-
+import os
 india = pytz.timezone('Asia/Kolkata')
 pymysql.install_as_MySQLdb()
 
@@ -16,7 +16,8 @@ pymysql.install_as_MySQLdb()
 app = Flask(__name__)
 app.secret_key = 'supersecretkey123'
 # Configure MySQL database (adjust according to your setup)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:Radharam12345@localhost/e_learning'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
+# app.config['SQLALCHEMY_DATABASE_URI'] = "mysql+pymysql://sql12780976:QQaqMPvltk@sql12.freesqldatabase.com/sql12780976"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
